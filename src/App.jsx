@@ -1,4 +1,4 @@
-import { Component } from 'react';
+import { useState, useEffect } from 'react';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import {
@@ -11,102 +11,72 @@ import {
 } from './App.styled';
 import { SearchForm, ImageGallery, Modal, imageAPI } from './components';
 
-export class App extends Component {
-   state = {
-      searchInput: '',
-      hits: [],
-      totalHits: null,
-      page: 1,
-      per_page: 12,
-      error: null,
-      status: `idle`,
-      showModal: false,
-      activeImageIdx: null,
-   };
+const per_page = 12;
 
-   componentDidUpdate(_, prevState) {
-      const { page, searchInput } = this.state;
-      const prevName = prevState.searchInput;
-      const prevPage = prevState.page;
+export function App() {
+   const [hits, setHits] = useState([]);
+   const [totalHits, setTotalHits] = useState(null);
+   const [searchInput, setSearchInput] = useState('');
+   const [page, setPage] = useState(1);
+   const [error, setError] = useState(null);
+   const [status, setStatus] = useState(`idle`);
+   const [showModal, setShowModal] = useState(false);
+   const [activeImageIdx, setActiveImageIdx] = useState(null);
 
-      if (prevName !== searchInput || prevPage !== page) {
-         this.setState({ status: 'pending' });
-
-         imageAPI
-            .fetchImages(searchInput, page, this.state.per_page)
-            .then(res => {
-               const { hits, totalHits } = res;
-               this.setState(prevState => ({
-                  hits:
-                     prevName !== searchInput
-                        ? [...hits]
-                        : [...prevState.hits, ...hits],
-                  totalHits,
-                  status: 'resolved',
-               }));
-            })
-            .catch(error => {
-               toast.error(`${error.message}`);
-               this.setState({ error, status: 'rejected' });
-            });
+   useEffect(() => {
+      if (searchInput === '') {
+         return;
       }
-   }
+      setStatus('pending');
+      imageAPI
+         .fetchImages(searchInput, page, per_page)
+         .then(res => {
+            setHits(prevHits => [...prevHits, ...res.hits]);
+            setTotalHits(res.totalHits);
+            setStatus('resolved');
+         })
+         .catch(error => {
+            toast.error(`${error.message}`);
+            setStatus('rejected');
+            setError(error);
+         });
+   }, [searchInput, page]);
 
-   handleSubmit = searchInput => {
-      this.setState({ searchInput });
+   const handleSubmit = searchInput => {
+      setSearchInput(searchInput);
+      setHits([]);
+      setPage(1);
    };
 
-   toggleModal = () => {
-      this.setState(({ showModal }) => ({
-         showModal: !showModal,
-         activeImageIdx: null,
-      }));
+   const loadMore = () => {
+      setPage(prevPage => prevPage + 1);
    };
 
-   setActiveImageIdx = ({ tags, largeImageURL }) => {
-      this.setState({
-         activeImageIdx: { tags, largeImageURL },
-      });
+   const toggleModal = () => {
+      setShowModal(!showModal);
+      setActiveImageIdx(null);
    };
 
-   onLoadMore = () => {
-      this.setState(prevState => ({ page: prevState.page + 1 }));
-   };
+   return (
+      <Box>
+         <Gallery>
+            <Searchbar>
+               <SearchForm onSubmit={handleSubmit} />
+            </Searchbar>
+            <ImageGallery
+               hits={hits}
+               setActiveImageIdx={setActiveImageIdx}
+               onClick={toggleModal}
+            />
+         </Gallery>
 
-   render() {
-      const {
-         hits,
-         showModal,
-         activeImageIdx,
-         status,
-         totalHits,
-         page,
-         per_page,
-      } = this.state;
-      const { handleSubmit, toggleModal, setActiveImageIdx } = this;
-
-      return (
-         <Box>
-            <Gallery>
-               <Searchbar>
-                  <SearchForm onSubmit={handleSubmit} />
-               </Searchbar>
-
-               <ImageGallery
-                  hits={hits}
-                  setActiveImageIdx={setActiveImageIdx}
-                  onClick={toggleModal}
-               />
-            </Gallery>
-
-            {totalHits === 0 && <NotFound />}
-            {status === 'pending' && <Loader />}
-            {totalHits - (page - 1) * per_page > per_page && (
-               <Button onClick={this.onLoadMore}>Load More</Button>
-            )}
-            {showModal && <Modal hits={activeImageIdx} onClose={toggleModal} />}
-            <ToastContainer limit={1} />
-         </Box>
-      );
-   }
+         {totalHits === 0 && <NotFound />}
+         {status === 'pending' && <Loader />}
+         {totalHits - (page - 1) * per_page > per_page && (
+            <Button onClick={loadMore}>Load More</Button>
+         )}
+         {showModal && <Modal hits={activeImageIdx} onClose={toggleModal} />}
+         <ToastContainer limit={1} />
+      </Box>
+   );
 }
