@@ -1,25 +1,21 @@
 import PropTypes from 'prop-types';
-import { Component } from 'react';
+import { useState } from 'react';
 import { Form, FormButton, Input } from './SearchForm.styled';
 import { VscSearch } from 'react-icons/vsc';
 import { toast } from 'react-toastify';
 
-class SearchForm extends Component {
-   state = {
-      name: '',
-      isCooldown: true,
+function SearchForm({ onSubmit }) {
+   const [name, setName] = useState('');
+
+   const handleNameChange = event => {
+      setName(event.currentTarget.value.toLowerCase());
    };
 
-   handleNameChange = event => {
-      this.setState({
-         name: event.currentTarget.value.toLowerCase(),
-      });
-   };
-
-   handleSubmit = event => {
+   const handleSubmit = event => {
       event.preventDefault();
       const form = event.currentTarget;
-      if (this.state.name.trim() === '') {
+
+      if (name.trim() === '') {
          toast.info('Please enter name', {
             position: 'top-right',
             autoClose: 2000,
@@ -31,34 +27,33 @@ class SearchForm extends Component {
             theme: 'colored',
          });
       }
-      this.props.onSubmit(this.state.name);
+
+      onSubmit(name);
       form.reset();
-      this.setState({ name: '' });
+      setName('');
    };
 
-   render() {
-      return (
-         <Form onSubmit={this.handleSubmit}>
-            <FormButton type="submit">
-               <VscSearch />
-            </FormButton>
+   return (
+      <Form onSubmit={handleSubmit}>
+         <FormButton type="submit">
+            <VscSearch />
+         </FormButton>
 
-            <Input
-               name="name"
-               type="text"
-               autoComplete="off"
-               autoFocus
-               value={this.state.name}
-               placeholder="Search images and photos"
-               onChange={this.handleNameChange}
-            />
-         </Form>
-      );
-   }
+         <Input
+            name="name"
+            type="text"
+            autoComplete="off"
+            autoFocus
+            value={name}
+            placeholder="Search images and photos"
+            onChange={handleNameChange}
+         />
+      </Form>
+   );
 }
 
 export default SearchForm;
 
 SearchForm.propTypes = {
-   handleSubmit: PropTypes.func.isRequired,
+   onSubmit: PropTypes.func.isRequired,
 }.isRequired;

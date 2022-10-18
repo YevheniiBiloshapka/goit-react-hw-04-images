@@ -21,10 +21,10 @@ export function App() {
    const [error, setError] = useState(null);
    const [status, setStatus] = useState(`idle`);
    const [showModal, setShowModal] = useState(false);
-   const [activeImageIdx, setActiveImageIdx] = useState(null);
+   const [selectedImage, setSelectedImage] = useState(null);
 
    useEffect(() => {
-      if (searchInput === '') {
+      if (searchInput.trim() === '') {
          return;
       }
       setStatus('pending');
@@ -38,7 +38,7 @@ export function App() {
          .catch(error => {
             toast.error(`${error.message}`);
             setStatus('rejected');
-            setError(error);
+            setError(error.message);
          });
    }, [searchInput, page]);
 
@@ -54,7 +54,7 @@ export function App() {
 
    const toggleModal = () => {
       setShowModal(!showModal);
-      setActiveImageIdx(null);
+      setSelectedImage(null);
    };
 
    return (
@@ -65,17 +65,18 @@ export function App() {
             </Searchbar>
             <ImageGallery
                hits={hits}
-               setActiveImageIdx={setActiveImageIdx}
+               setSelectedImage={setSelectedImage}
                onClick={toggleModal}
             />
          </Gallery>
 
          {totalHits === 0 && <NotFound />}
+         {error && <NotFound />}
          {status === 'pending' && <Loader />}
          {totalHits - (page - 1) * per_page > per_page && (
             <Button onClick={loadMore}>Load More</Button>
          )}
-         {showModal && <Modal hits={activeImageIdx} onClose={toggleModal} />}
+         {showModal && <Modal hits={selectedImage} onClose={toggleModal} />}
          <ToastContainer limit={1} />
       </Box>
    );

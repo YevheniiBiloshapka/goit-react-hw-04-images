@@ -24,6 +24,7 @@ export const NotFound = styled.div`
 export const Box = styled.div`
    display: flex;
    flex-direction: column;
+   padding-bottom: 50px;
 `;
 export const Gallery = styled.div`
    display: grid;
